@@ -1,11 +1,4 @@
-/* Lumo's filled input paradigm: a contrast-10pct fill with no border and an
-   animated hover/activation highlight drawn by ::after.
-
-   PoC headline change: the original maintains a 10-tag list (vaadin-text-field,
-   vaadin-password-field, vaadin-email-field, vaadin-number-field,
-   vaadin-integer-field, vaadin-text-area, vaadin-combo-box, vaadin-time-picker,
-   vaadin-date-picker, vaadin-select). Here it is one ROLE token `vaadin-role~="input"`,
-   stamped by every field component that renders an input container. */
+/* Input container styles */
 
 :where([vaadin-role~='input']) {
   padding: var(--lumo-space-xs) 0;

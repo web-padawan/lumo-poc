@@ -13,7 +13,6 @@
     "@vaadin/badge": "25.3.0-alpha9",
     "@vaadin/button": "25.3.0-alpha9",
     "@vaadin/checkbox": "25.3.0-alpha9",
-    "@vaadin/text-area": "25.3.0-alpha9",
     "@vaadin/text-field": "25.3.0-alpha9"
   },
   "devDependencies": {

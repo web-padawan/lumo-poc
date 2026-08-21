@@ -8,32 +8,24 @@
     <link rel="stylesheet" href="./lumo.css" />
     <style>
       body {
-        margin: 2rem auto;
+        margin: 0 auto;
         max-width: 60rem;
-        padding: 0 1rem;
+        padding: 1rem;
       }
       section {
-        margin-block: 2rem;
+        margin-block: 1.5rem;
       }
       .row {
         display: flex;
         align-items: baseline;
         flex-wrap: wrap;
         gap: 0.75rem;
+        margin: 0.5rem 0;
       }
       .note {
         font-size: 0.8125rem;
         color: var(--lumo-secondary-text-color);
         max-width: 46rem;
-      }
-      .controls {
-        position: sticky;
-        top: 0;
-        display: flex;
-        gap: 0.5rem;
-        padding-block: 0.5rem;
-        background: var(--lumo-base-color);
-        z-index: 10;
       }
       code {
         font-size: 0.8125em;
@@ -44,24 +36,10 @@
   </head>
   <body>
     <h2>Lumo PoC — <code>vaadin-role~="…"</code> marker selectors</h2>
-    <p class="note">
-      Light-DOM Lumo (from <code>proto/lumo-light-dom</code>) with tag-name selectors replaced by a
-      component-stamped <code>vaadin-role</code> marker attribute. One theme selector now covers the component, any
-      subclass under any tag name (#7055), and plain HTML elements that opt in manually (#1803).
-    </p>
-
-    <div class="controls">
-      <button vaadin-role="button" id="toggle-scheme">Toggle color scheme</button>
-      <button vaadin-role="button" theme="error" id="wipe-classes">Wipe all class attributes</button>
-    </div>
-    <p class="note" id="wipe-note">
-      "Wipe" simulates a framework/user overwriting <code>class</code> (<code>className=</code>,
-      <code>class=${'…'}</code>, utility classes). With class-based markers (<code>.v-button</code>) everything
-      would lose its styles; the attribute marker survives — nothing changes.
-    </p>
+    <button vaadin-role="button" id="toggle-scheme">Toggle color scheme</button>
 
     <section>
-      <h3>1. Components: <code>&lt;vaadin-button&gt;</code> (marker auto-stamped)</h3>
+      <h3>1. Components: <code>&lt;vaadin-button&gt;</code></h3>
       <div class="row">
         <vaadin-button>Default</vaadin-button>
         <vaadin-button theme="primary">Primary</vaadin-button>
@@ -81,10 +59,6 @@
         <a vaadin-role="button" theme="small" href="https://vaadin.com">Small link</a>
         <button vaadin-role="button" theme="primary">Native button</button>
       </div>
-      <p class="note">
-        Real anchors: <kbd>Cmd</kbd>-click, right-click → open in new tab all work. Same theme CSS as section 1;
-        only the structural base block is re-published by the recipe layer (<code>src/recipes/button.css</code>).
-      </p>
     </section>
 
     <section>
@@ -95,14 +69,10 @@
         <x-button theme="tertiary">Tertiary</x-button>
         <x-button theme="small">Small</x-button>
       </div>
-      <p class="note">
-        With tag-keyed selectors these render base-only. The marker is stamped per
-        class, so the subclass inherits full Lumo under any tag name.
-      </p>
     </section>
 
     <section>
-      <h3>4. Badges: component and plain <code>&lt;span&gt;</code> / <code>&lt;div&gt;</code> / <code>&lt;a&gt;</code></h3>
+      <h3>4. Badges: component and plain <code>&lt;span&gt;</code> / <code>&lt;a&gt;</code></h3>
       <div class="row">
         <vaadin-badge>Component</vaadin-badge>
         <vaadin-badge theme="success">Success</vaadin-badge>
@@ -110,21 +80,13 @@
         <span vaadin-role="badge">Plain span</span>
         <span vaadin-role="badge" theme="success">Success</span>
         <span vaadin-role="badge" theme="warning">Warning</span>
-        <span vaadin-role="badge" theme="filled">Filled</span>
-        <div vaadin-role="badge" theme="neutral">Plain div</div>
         <span vaadin-role="badge" theme="filled error">Filled error</span>
         <a vaadin-role="badge" theme="neutral" href="#">Link badge</a>
       </div>
     </section>
 
     <section>
-      <h3>5. Role tokens: <code>vaadin-role="text-field field input"</code></h3>
-      <p class="note">
-        The original theme keeps 16-tag and 10-tag selector lists in <code>field.css</code> /
-        <code>input-container.css</code>. Here text-field and text-area stamp the <code>field</code> and
-        <code>input</code> role tokens, and the shared files contain zero tag names — new field components join
-        the family without editing the theme.
-      </p>
+      <h3>5. Fields: <code>vaadin-role="text-field field input"</code></h3>
       <div class="row">
         <vaadin-text-field label="Label" helper-text="Helper text" placeholder="Placeholder"></vaadin-text-field>
         <vaadin-text-field label="Invalid" invalid error-message="Error message" value="Value"></vaadin-text-field>
@@ -132,7 +94,6 @@
         <vaadin-text-field label="Small" theme="small" value="Small"></vaadin-text-field>
       </div>
       <div class="row">
-        <vaadin-text-area label="Text area" helper-text="Shares field + input roles" value="Multi-line"></vaadin-text-area>
         <vaadin-checkbox label="Checkbox"></vaadin-checkbox>
         <vaadin-checkbox label="Checked" checked></vaadin-checkbox>
         <vaadin-checkbox label="Readonly" readonly checked></vaadin-checkbox>
@@ -140,21 +101,11 @@
       </div>
     </section>
 
-    <section>
-      <h3>6. Inspect the DOM</h3>
-      <p class="note">
-        Open DevTools: components carry e.g. <code>vaadin-role="text-field field input"</code> stamped at upgrade
-        (PoC: <code>src/marker-stamp.js</code>; natively one line in a base mixin's
-        <code>connectedCallback</code>). User-authored tokens are merged, never clobbered.
-      </p>
-    </section>
-
     <script type="module">
       import { Button } from '@vaadin/button';
       import { Badge } from '@vaadin/badge';
       import { Checkbox } from '@vaadin/checkbox';
       import { TextField } from '@vaadin/text-field';
-      import { TextArea } from '@vaadin/text-area';
       import { registerMarker } from './src/marker-stamp.js';
 
       // Natively: each class/mixin contributes its own tokens via connectedCallback.
@@ -162,7 +113,6 @@
       registerMarker(Badge, ['badge']);
       registerMarker(Checkbox, ['checkbox']);
       registerMarker(TextField, ['text-field', 'field', 'input']);
-      registerMarker(TextArea, ['text-area', 'field', 'input']);
 
       // #7055 scenario: subclass registered under a foreign tag name.
       class XButton extends Button {}
@@ -172,14 +122,6 @@
       document.getElementById('toggle-scheme').addEventListener('click', () => {
         const root = document.documentElement;
         root.style.colorScheme = root.style.colorScheme === 'dark' ? 'light' : 'dark';
-      });
-
-      document.getElementById('wipe-classes').addEventListener('click', () => {
-        document.querySelectorAll('body [vaadin-role], body vaadin-badge, body vaadin-checkbox').forEach((el) => {
-          el.className = 'p-4 text-sm from-user-framework';
-        });
-        document.getElementById('wipe-note').textContent =
-          'Classes wiped on every marked element — styling intact, because the marker is an attribute.';
       });
     </script>
   </body>

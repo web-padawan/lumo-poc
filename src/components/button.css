@@ -1,16 +1,3 @@
-/* PoC: tag-name selectors replaced with the `vaadin` marker attribute.
-   Original (proto/lumo-light-dom) repeats the family list
-   `:where(vaadin-button, vaadin-menu-bar-button, vaadin-message-input-button)` ~30
-   times (148 tag mentions in one file). Here every member of the family carries
-   `vaadin-role~="button"` — stamped by the component itself (see ../marker-stamp.js) or
-   written manually on a plain element (see ../recipes/button.css) — so the whole
-   family, subclasses, and `<a vaadin-role="button">` are one selector.
-
-   NOTE: the original also widens some rules to vaadin-drawer-toggle (press overlay
-   only, not the full look). In the marker model drawer-toggle would carry a narrower
-   aspect token (e.g. `vaadin-role~="button-effects"`); the full-look components would
-   carry both tokens. Skipped in this PoC — drawer-toggle is not imported. */
-
 :where(:root),
 :where(:host) {
   --_lumo-button-size: var(--lumo-size-m);
@@ -21,10 +8,6 @@
   --vaadin-button-text-color: var(--lumo-primary-text-color);
   --vaadin-button-border-width: 0px;
 }
-
-/* NOTE: original has a third selector here, :where(vaadin-message-input-button),
-   re-declaring the button vars at element scope to beat its own base styles. In the
-   marker model: :where([vaadin-role~='message-input-button']). Dropped from the PoC. */
 
 :where([vaadin-role~='button']) {
   position: relative;
@@ -182,8 +165,6 @@
   background-color: black;
 }
 
-/* NOTE: coexistence leftover — vaadin-icon kept as a tag selector in this PoC.
-   Full adoption would stamp icons too and use [vaadin-role~='icon']. */
 :where([vaadin-role~='button']) > vaadin-icon[icon^='vaadin:'] {
   padding: 0.25em;
 }

@@ -1,8 +1,4 @@
-/* PoC: `:where(vaadin-badge)` → `:where([vaadin-role~='badge'])`. Because every rule in
-   this file styles the host directly (vars + background/color), it applies unchanged
-   to a plain `<span vaadin-role="badge">` — only the structural base block has to be
-   re-published for plain elements (see ../recipes/badge.css). This is the modern
-   equivalent of the classic Lumo `theme="badge"` utility (#1803 family). */
+/* Modern equivalent of the classic Lumo `theme="badge"` utility */
 
 :where(:root),
 :where(:host) {

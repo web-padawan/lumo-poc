@@ -1,14 +1,4 @@
-/* Shared Lumo styles for the field mixin parts: label, helper text, error message,
-   required indicator.
-
-   PoC headline change: the original maintains a hand-written 16-tag selector list
-   (vaadin-slider, vaadin-range-slider, vaadin-checkbox-group, vaadin-radio-group,
-   vaadin-text-field, vaadin-password-field, vaadin-email-field, vaadin-number-field,
-   vaadin-integer-field, vaadin-text-area, vaadin-combo-box, vaadin-time-picker,
-   vaadin-date-picker, vaadin-select, vaadin-custom-field, vaadin-date-time-picker)
-   that must be edited whenever a field component is added. Here the whole family is
-   one ROLE token: every component using the field mixin stamps `vaadin-role~="field"`, so
-   new (and third-party) field components join the family without touching this file. */
+/* Field styles: label, helper text, error message, required indicator. */
 
 :where(:root),
 :where(:host) {
