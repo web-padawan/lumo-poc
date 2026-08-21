@@ -46,7 +46,7 @@
     <h2>Lumo PoC — <code>vaadin-role~="…"</code> marker selectors</h2>
     <p class="note">
       Light-DOM Lumo (from <code>proto/lumo-light-dom</code>) with tag-name selectors replaced by a
-      component-stamped <code>vaadin</code> marker attribute. One theme selector now covers the component, any
+      component-stamped <code>vaadin-role</code> marker attribute. One theme selector now covers the component, any
       subclass under any tag name (#7055), and plain HTML elements that opt in manually (#1803).
     </p>
 
@@ -102,7 +102,7 @@
     </section>
 
     <section>
-      <h3>4. Badges: component and <code>&lt;span vaadin-role="badge"&gt;</code></h3>
+      <h3>4. Badges: component and plain <code>&lt;span&gt;</code> / <code>&lt;div&gt;</code> / <code>&lt;a&gt;</code></h3>
       <div class="row">
         <vaadin-badge>Component</vaadin-badge>
         <vaadin-badge theme="success">Success</vaadin-badge>
@@ -111,6 +111,7 @@
         <span vaadin-role="badge" theme="success">Success</span>
         <span vaadin-role="badge" theme="warning">Warning</span>
         <span vaadin-role="badge" theme="filled">Filled</span>
+        <div vaadin-role="badge" theme="neutral">Plain div</div>
         <span vaadin-role="badge" theme="filled error">Filled error</span>
         <a vaadin-role="badge" theme="neutral" href="#">Link badge</a>
       </div>

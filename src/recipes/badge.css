@@ -1,6 +1,6 @@
 /* Recipe: plain elements as Lumo badges, replacing the `theme="badge"` */
 
-:where(span, a):where([vaadin-role~='badge']) {
+:where(span, div, a):where([vaadin-role~='badge']) {
   display: inline-flex;
   align-items: center;
   justify-content: center;

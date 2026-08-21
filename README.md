@@ -1,211 +1,300 @@
-# PoC: attribute marker selectors for light-DOM Lumo
+# Light-DOM Lumo: marker attributes instead of tag names
 
-Proof of concept for replacing `vaadin-*` **tag-name selectors** in the light-DOM Lumo package
-(`proto/lumo-light-dom` → `packages/lumo`) with a **component-stamped marker attribute**:
+A proof of concept for the light-DOM Lumo theme (`proto/lumo-light-dom` → `packages/lumo`).
+
+**The idea:** stop keying theme rules on `vaadin-*` tag names. Key them on a token-list attribute
+that the component stamps on itself — and that anyone can also write by hand.
 
 ```css
-/* before */                              /* after */
+/* today */                               /* this PoC */
 :where(vaadin-button,                     :where([vaadin-role~='button']) { … }
        vaadin-menu-bar-button,
        vaadin-message-input-button) { … }
 ```
 
 ```html
-<vaadin-button>…</vaadin-button>
-<!-- stamps vaadin-role="button" itself -->
-<a vaadin-role="button" href="…">…</a>
-<!-- plain element opts in (#1803) -->
-<x-button>…</x-button>
-<!-- subclass under any tag: inherits marker (#7055) -->
+<vaadin-button>…</vaadin-button>     <!-- stamps vaadin-role="button" on itself -->
+<a vaadin-role="button">…</a>        <!-- plain element opts in by hand -->
+<custom-button>…</custom-button>     <!-- subclass under a foreign tag: fully themed -->
 ```
 
-Run it:
+One selector now covers all three. The tag name stops being part of the theme's contract.
+
+## Try it
 
 ```bash
 npm install
-npm start          # dev server (@web/dev-server, serves source with node-resolve)
-npm run build      # static build to dist/ (rollup + @web/rollup-plugin-html, CSS @imports inlined)
-npm run preview    # build + serve dist/
+npm start      # dev server (@web/dev-server, serves source)
+npm run build  # static build into dist/
+npm run preview
 ```
 
-Pushing to GitHub deploys `dist/` to GitHub Pages automatically (`.github/workflows/deploy.yml`;
-enable Pages with source "GitHub Actions" in the repo settings).
+Pushing to `main` deploys `dist/` to GitHub Pages
+(`.github/workflows/deploy.yml`; enable Pages with source "GitHub Actions" in the repo settings).
 
-## Why move off tag names
+## The problems it solves
+
+All four have the same root cause: the theme selects on the tag name, so anything that is not
+literally `<vaadin-button>` is invisible to it.
+
+| Problem                    | Today                                             | With the marker                    |
+| -------------------------- | ------------------------------------------------- | ---------------------------------- |
+| Links as buttons           | not supported — copy CSS by hand                  | `<a vaadin-role="button">`         |
+| Divs as badges             | only via the legacy `theme="badge"` module        | `<div vaadin-role="badge">`        |
+| Customizing tag names      | re-tagged subclass renders unstyled               | `<custom-button>` inherits Lumo    |
+| Family lists in `:where()` | 16 hand-listed tags in `field.css`                | one `[vaadin-role~='field']` token |
+
+### 1. Links as buttons — `<a vaadin-role="button">`
+
+Open since 2018 as [#1803](https://github.com/vaadin/web-components/issues/1803), and one of the
+five use cases of the [#8237](https://github.com/vaadin/web-components/issues/8237) epic. People want
+real anchors — `Cmd`-click, right-click → open in new tab, crawlable `href` — that look like Lumo
+buttons. Today the only way is to copy Lumo's button CSS into the app and re-copy it on every upgrade.
+
+[PR #11771](https://github.com/vaadin/web-components/pull/11771) tried this with an `.aura-button`
+class and was closed in 2026-06 pending exactly this research.
+
+Demo: section 2. The theme rules are shared verbatim with `<vaadin-button>`; only the structural base
+block is re-published for plain elements (`src/recipes/button.css`, ~45 lines).
+
+### 2. Divs as badges — `<div vaadin-role="badge">`
+
+Badge started life as a `theme="badge"` styling trick and is now a real component. The plain-element
+half is still unserved: a `<span>`, `<div>`, or `<a>` cannot join in. [#8237](https://github.com/vaadin/web-components/issues/8237)
+explicitly asks for badges to be refactored away from `theme`-attribute styling.
+
+Because every rule in `badge.css` styles the host directly, the same file covers both the component
+and a plain element — a ~25-line recipe supplies the structural base block. Demo: section 4.
+
+### 3. Customizing tag names — `<custom-button>`
+
+[#7055](https://github.com/vaadin/web-components/issues/7055): consumers subclass a component and
+register it under their own tag name (to avoid registry conflicts, to ship a customized variant, or
+because Copilot-style tooling needs isolation). With tag-keyed selectors that subclass renders as
+unstyled base markup — the theme has never heard of `<custom-button>`.
+
+The marker is stamped per class, so it travels with the inheritance chain, under any tag name. And
+because it is an opt-*in* mechanism, a subclass that genuinely wants isolation can opt out by not
+contributing tokens — tags give neither direction. Demo: section 3 (`<x-button> extends Button`).
+
+### 4. No more comma-separated tag names in `:where()`
 
 Measured on `proto/lumo-light-dom:packages/lumo` (2026-08-21):
 
-- **1,113 `vaadin-*` tag mentions** package-wide.
-- `button.css` repeats its 3-tag family list ~30× (148 tag mentions in one file).
-- `field.css` / `input-container.css` maintain hand-written **16-tag / 10-tag family lists**; every
-  new field component means editing shared theme files.
-- Tag-keyed selectors exclude three consumer groups entirely:
-  1. **Renamed subclasses** ([#7055](https://github.com/vaadin/web-components/issues/7055)).
-  2. **Plain HTML elements** ([#1803](https://github.com/vaadin/web-components/issues/1803), open since 2017 —
-     links styled as buttons; [PR #11771](https://github.com/vaadin/web-components/pull/11771) closed 2026-06
-     pending exactly this research).
-  3. **Third-party components** that reuse Vaadin mixins/parts and could otherwise join a style family.
+- **1,113** `vaadin-*` tag mentions package-wide.
+- `button.css` repeats its 3-tag family list ~30 times — **148** tag mentions in a single file.
+- `field.css` and `input-container.css` maintain hand-written **16-tag** and **10-tag** family lists.
+
+Every new field component means editing shared theme files, and every list is one more place to forget
+a tag. Role tokens replace the lists: `field.css` selects `[vaadin-role~='field']`,
+`input-container.css` selects `[vaadin-role~='input']`, and the families become *open* — any component
+that stamps the role joins, including third-party components that reuse Vaadin mixins and parts.
+
+## How the marker works
+
+- **The component stamps itself** in `connectedCallback` (the spec forbids attribute mutation in
+  constructors). `src/marker-stamp.js` is the PoC stand-in; natively it is one line in a base mixin.
+- **Tokens compose along the inheritance chain.** `TextField` ends up with
+  `vaadin-role="text-field field input"`: the component token from the class, the role tokens from the
+  mixins (`field` from FieldMixin, `input` from the input-container family).
+- **Attributes survive user and framework code.** React `className=`, Lit `class=${…}`, Vue `:class`
+  and utility-CSS workflows overwrite the whole `class` attribute; nothing rewrites an attribute it
+  does not know about. Stamping merges tokens and never clobbers author-written ones.
+- **Plain elements opt in by hand**, in static HTML and in SSR output — no JS required.
+- **Specificity is unchanged.** Wrapped in `:where()` the marker scores (0,0,0), exactly like the
+  current tag selectors, so light-DOM Lumo's "users override with a plain selector" story still holds.
+
+## What is in the PoC
+
+| Path                                 | What it shows                                                              |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| `src/components/button.css`          | 3-tag family list × ~30 → one `button` token; 2 coexistence leftovers      |
+| `src/components/field.css`           | 16-tag list → `field` role + `group-field` sub-role; zero tag names        |
+| `src/components/input-container.css` | 10-tag list → `input` role                                                 |
+| `src/components/text-area.css`       | Straight tag → marker port                                                 |
+| `src/components/checkbox.css`        | Straight tag → marker port                                                 |
+| `src/components/badge.css`           | Straight tag → marker port; same file serves component and plain elements  |
+| `src/recipes/button.css`             | `<a>` / `<button>` opt-in: the base `:host` block re-published, ~45 lines  |
+| `src/recipes/badge.css`              | `<span>` / `<div>` / `<a>` opt-in, ~25 lines                               |
+| `src/marker-stamp.js`                | PoC stand-in for native stamping (`instanceof`-based)                      |
+| `index.html`                         | The six demo sections, including the "wipe all classes" control            |
+| `src/*.css` (tokens)                 | Verbatim from `packages/lumo` — selector-agnostic, untouched                |
+
+Two notes on the recipes layer:
+
+- It should be **build-generated** from the components' `*-base-styles.js`, not hand-copied. That
+  answers the "copy-paste feels dirty" objection raised in PR #11771.
+- It is **theme-agnostic** — the structural base block is the same for Lumo and Aura, so Aura reuses it.
+
+## Results
+
+Verified 2026-08-21 against `@vaadin/*@25.3.0-alpha9` in Chromium (Playwright), light and dark — see
+`screenshots/demo-light.png` and `screenshots/demo-dark.png`.
+
+- Ported component files contain **zero `vaadin-*` tag selectors**, except two documented coexistence
+  leftovers (`vaadin-icon`, `vaadin-password-field-button`), each marked `NOTE:`.
+- The shared field/input files went from **26 hand-listed tags to 2 role tokens**.
+- Stamping is confirmed in the DOM: `vaadin-text-field` → `vaadin-role="text-field field input"`,
+  `x-button` → `vaadin-role="button"`.
+- A user-authored token survives stamping: `vaadin-role="my-custom"` becomes `"my-custom button"`.
+- The re-tagged `Button` subclass renders pixel-identical to `vaadin-button`, theme variants included.
+  Today it renders base-only.
+- `<a vaadin-role="button">` and `<span vaadin-role="badge">` get the full Lumo look while keeping
+  native anchor behavior.
+- **Wiping `class` on every marked element changes nothing.** The same action breaks a class-based
+  marker design outright.
 
 ## Options considered
 
-### A. Classes — `.v-button`, `.v-badge`, role classes `.v-field`
+### A. Classes — `.v-button`, `.v-field`
 
-The Valo-era approach (V8 literally used `.v-button`), and what PR #11771 tried (`.aura-button`).
+The Valo-era approach (Vaadin 8 literally used `.v-button`), and what PR #11771 tried.
 
-- **Pros:** familiar; fastest selector matching; trivial manual opt-in; composes (`class="v-button my-btn"`).
-- **Cons (disqualifying as the _auto-stamped_ marker):** `class` is user-owned real estate. React
-  `className=`, Lit `class=${…}`, Vue `:class`, and utility-CSS workflows **overwrite the whole attribute** —
-  a component-stamped class is silently wiped and the component silently loses its theme (the exact failure
-  mode light-DOM Lumo is trying to eliminate). Short `.v-*` names can also collide with app utility classes.
-  Component code and user code fighting over one attribute needs observer-based re-stamping — fragile.
+Familiar, fast to match, trivial to write by hand, and composable. Disqualifying flaw *as the
+auto-stamped marker*: `class` is user-owned real estate. Frameworks replace the whole attribute, so a
+component-stamped class is silently wiped and the component silently loses its theme — the exact
+failure mode light-DOM Lumo exists to eliminate. Keeping it alive needs observer-based re-stamping,
+and short `.v-*` names collide with app utility classes.
 
-### B. Dedicated attribute — `vaadin-role~="button"` ← **recommended, this PoC**
+### B. Dedicated attribute — `[vaadin-role~='button']` ← recommended, this PoC
 
-A token-list attribute owned by Vaadin, mirroring the established `theme~="…"` idiom:
+A token-list attribute owned by Vaadin, mirroring the established `theme~='…'` idiom. See
+[How the marker works](#how-the-marker-works). Variants within this option:
 
-- The component stamps its own tokens in `connectedCallback` (constructors may not set attributes).
-  Tokens compose along the inheritance/mixin chain: `TextField` → `vaadin-role="text-field field input"` —
-  component token from the class, **role tokens** from the mixins (`field` = FieldMixin family,
-  `input` = input-container family). The 16-tag and 10-tag lists collapse to
-  `:where([vaadin-role~='field'])` / `:where([vaadin-role~='input'])`, and the family becomes _open_: any component
-  stamping the role joins it.
-- Frameworks **merge** attributes; nothing in normal app code rewrites an attribute it doesn't know.
-  Stamping merges tokens and never clobbers user-authored ones.
-- Plain elements opt in manually: `<a vaadin-role="button">` — works in static HTML and SSR.
-- Subclasses inherit stamping under any tag name (fixes #7055); a subclass wanting _isolation_
-  (the Copilot case in #7055) overrides the token contribution to opt out — the attribute gives a switch in
-  both directions, where tags give neither.
-- Specificity is identical to classes when wrapped in `:where()` (0,0,0) — the "users override with a bare
-  tag/class selector" story of light-DOM Lumo is unchanged.
-
-Variants:
-
-- **`data-vaadin-role~="…"`** — HTML-validator-clean; more verbose. Vaadin already ships non-`data` attributes
-  (`theme`, `has-label`, `focus-ring`), so plain `vaadin-role` follows existing practice — and becomes
-  spec-legal anyway if WICG custom attributes land (see below). Team decision.
-- **Per-component boolean attributes** (`vaadin-button` → `[vaadin-button]`) — no token composition in one
-  attribute; role markers become N attributes; noisier DOM. But maps 1:1 onto the WICG custom-attributes
-  proposal (see below), which is registration-per-attribute-name.
-- **Avoid `v-*`**: Vue claims the `v-*` attribute namespace for directives — `<a v-button>` inside a Vue
-  template is parsed as an unknown directive. `vaadin-*` is collision-free.
-
-### Standards trajectory: WICG custom attributes ([WICG/webcomponents#1029](https://github.com/WICG/webcomponents/issues/1029))
-
-Lea Verou's *custom attributes* proposal (2023, active — scoped-down explainer started 2025-12 at
-[`webplatformco/project-custom-attributes`](https://github.com/webplatformco/project-custom-attributes)) is
-the platform-level version of this exact pattern: an `Attribute` class with
-`connectedCallback`/`disconnectedCallback`/`changedCallback`, registered per attribute name via
-`HTMLElement.attributeRegistry.define(…)` — on built-ins and custom elements alike. Its "complex
-enhancements" tier cites lume's `has="a b c"` token-list attribute (the same shape as `vaadin-role~="…"`) as
-prior art. No browser implementation yet; treat as direction, not dependency.
-
-How it bears on this design:
-
-1. **It validates the mechanism.** Attributes as composable, element-type-independent behavior/identity
-   carriers — applied to built-ins — is exactly the marker model. The proposal's htmx example even uses
-   attribute selectors as the activation mechanism.
-2. **It constrains naming — the one decision to make *now*.** The thread (2026-01) converges on the platform
-   reserving **hyphenated attribute names** for custom attributes, mirroring custom-element naming. A bare,
-   hyphen-less `vaadin` attribute sits *outside* that namespace forever: it could never be upgraded to a
-   registered custom attribute, and stays spec-invalid with no path to legitimacy. A hyphenated name
-   (`vaadin-role="button field input"`, or boolean `vaadin-button`) sits *inside* it: if the proposal ships,
-   the marker becomes registrable and thereby spec-legal — retroactively killing the `data-` argument.
-3. **It offers an upgrade path that closes the recipe gaps.** Today `<a vaadin-button>` is styling-only; the
-   fidelity gaps (no `[active]` reflection, no `disabled` semantics, no `role` management) are hand-waved or
-   approximated with `:active`. A registered `VaadinButtonAttribute` behavior could add exactly those on
-   plain elements with lifecycle callbacks — turning the recipes layer from "CSS-only look-alike" into a real
-   lightweight enhancement, without changing a single selector.
-4. **Token list vs boolean attributes both survive**, if hyphenated. Registration is per attribute *name*,
-   but an attribute's *value* syntax is author-defined — a single `vaadin-role` custom attribute can parse a
-   token list and attach per-token behaviors (the proposal itself shows one attribute imperatively adding
-   several behaviors). Boolean-per-component maps more directly (one name = one behavior class) at the cost
-   of N attributes per element.
-5. **What it does not change:** Vaadin components still stamp their own markers in `connectedCallback` —
-   custom attributes fire behavior when *authors* write attributes; automatic component identity still comes
-   from the component. And the proposal being pre-implementation means the marker must work today as an
-   inert attribute + CSS selector — which it does.
-
-**Net effect on the recommendation:** keep the token-list attribute, but name it hyphenated —
-`vaadin-role~="button"` (or similar) instead of a bare, hyphen-less `vaadin~="button"` — so the marker is
-forward-compatible with #1029, Vue-safe, and eventually spec-legal. This PoC uses `vaadin-role`.
+- **`data-vaadin-role`** — HTML-validator-clean, more verbose. Vaadin already ships non-`data`
+  attributes (`theme`, `has-label`, `focus-ring`), and a hyphenated name becomes spec-legal anyway if
+  WICG custom attributes land. Team decision.
+- **Per-component boolean attributes** (`[vaadin-button]`) — no token composition, so role markers
+  become N attributes and the DOM gets noisier. But it maps 1:1 onto the WICG proposal, which
+  registers per attribute *name*.
+- **Avoid `v-*`** — Vue claims that namespace for directives; `<a v-button>` inside a Vue template
+  parses as an unknown directive. `vaadin-*` is collision-free.
 
 ### C. Hybrid — `:where(vaadin-button, [vaadin-role~='button'])`
 
-Migration/coexistence strategy, not an end state: keeps pre-upgrade (FOUC-window) and no-JS styling while
-markers roll out. Could be generated from one logical name by PostCSS. Reasonable for a transition release.
+A migration strategy, not an end state. Keeps pre-upgrade (FOUC-window) and no-JS styling working
+while markers roll out, and could be generated from one logical name by PostCSS. Reasonable for a
+transition release.
 
 ### D. Custom states — `:state(vaadin-button)`
 
-`ElementInternals.states` is component-owned and can't be clobbered at all — but **plain HTML elements can
-never opt in** (no HTML syntax, no ElementInternals on built-ins), it's invisible to SSR, and DevTools
-discoverability is poor. Rejected as primary; could complement later for pure-state selectors.
+`ElementInternals.states` is component-owned and cannot be clobbered at all. But plain HTML elements
+can never opt in (no HTML syntax, no `ElementInternals` on built-ins), it is invisible to SSR, and
+DevTools discoverability is poor. Rejected as the primary mechanism; could complement it later for
+pure-state selectors.
 
-### E. Keep tags + documented PostCSS rename transform
+### E. Keep tags + a documented PostCSS rename transform
 
-A supported build-time selector rewrite would let subclass consumers re-key the published CSS.
-Cheap stopgap for 25.x; solves renaming only — no plain elements, no list reduction. Complement, not answer.
+A supported build-time selector rewrite would let subclass consumers re-key the published CSS. A cheap
+stopgap for 25.x, but it solves renaming only — no plain elements, no shorter family lists.
 
-### Decision drivers (summary)
+### Decision drivers
 
 | Driver                           | Classes        | Attribute         | Custom states | Tags + codemod |
 | -------------------------------- | -------------- | ----------------- | ------------- | -------------- |
 | Survives user/framework code     | ✗ (class wipe) | ✓                 | ✓✓            | ✓              |
 | Plain-element opt-in in HTML/SSR | ✓              | ✓                 | ✗             | ✗              |
-| Subclass/re-tag support          | ✓ (if stamped) | ✓                 | ✓             | ✓ (build step) |
-| Role tokens / open families      | ✓              | ✓ (one attr)      | ✓             | ✗              |
+| Subclass / re-tag support        | ✓ (if stamped) | ✓                 | ✓             | ✓ (build step) |
+| Role tokens / open families      | ✓              | ✓ (one attribute) | ✓             | ✗              |
 | Theme-agnostic naming (#11771)   | ✓              | ✓                 | ✓             | n/a            |
 | No-JS / pre-upgrade styling      | ✗              | ✗ (SSR mitigates) | ✗             | ✓              |
 
-## What this PoC contains
+## Standards trajectory: WICG custom attributes
 
-| Path                                                        | What it shows                                                                                                                                                                                                                      |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/components/button.css`                                 | 3-tag family list × ~30 → single `[vaadin-role~='button']`; NOTEd coexistence leftovers (`vaadin-icon`)                                                                                                                                 |
-| `src/components/field.css`                                  | 16-tag list → `[vaadin-role~='field']` role + `group-field` sub-role; zero tag names                                                                                                                                                    |
-| `src/components/input-container.css`                        | 10-tag list → `[vaadin-role~='input']` role                                                                                                                                                                                             |
-| `src/components/text-area.css`, `checkbox.css`, `badge.css` | Straight tag→marker ports                                                                                                                                                                                                          |
-| `src/recipes/button.css`, `badge.css`                       | Plain-element opt-in (#1803): light-DOM re-publication of the base `:host` block. **Should be build-generated from `*-base-styles.js`** — answers jouni's "copy-paste feels dirty" in #11771; theme-agnostic (Aura would reuse it) |
-| `src/marker-stamp.js`                                       | PoC stand-in for native stamping (`instanceof`-based). Natively: one line in a base mixin's `connectedCallback`, tokens contributed per class/mixin, opt-out by override                                                           |
-| `index.html`                                                | Side-by-side: component / `<a vaadin-role="button">` / re-tagged `<x-button>`; role-token fields; **"wipe classes" control proving attribute robustness**; color-scheme toggle                                                          |
-| Token files (`src/*.css`)                                   | Verbatim from `packages/lumo` — selector-agnostic, untouched by this change                                                                                                                                                        |
+Lea Verou's *custom attributes* proposal ([WICG/webcomponents#1029](https://github.com/WICG/webcomponents/issues/1029),
+2023, active — scoped-down explainer started 2025-12 at
+[`webplatformco/project-custom-attributes`](https://github.com/webplatformco/project-custom-attributes))
+is the platform-level version of this pattern: an `Attribute` class with
+`connectedCallback`/`disconnectedCallback`/`changedCallback`, registered per attribute name via
+`HTMLElement.attributeRegistry.define(…)`, on built-ins and custom elements alike. Its "complex
+enhancements" tier cites lume's `has="a b c"` token-list attribute — the same shape as `vaadin-role` —
+as prior art. No browser implements it yet: treat it as direction, not dependency.
 
-## Results
+Three things follow for this design.
 
-Verified 2026-08-21 against `@vaadin/*@25.3.0-alpha9` (Playwright, Chromium): light and dark
-(`color-scheme` flip on `light-dark()` tokens) — see `screenshots/demo-light.png` /
-`screenshots/demo-dark.png`. Stamped attributes confirmed in the DOM
-(`vaadin-text-field` → `vaadin-role="text-field field input"`, `x-button` → `vaadin-role="button"`); a
-user-authored token (`vaadin-role="my-custom"`) is preserved through stamping (`"my-custom button"`);
-wiping `class` on every marked element leaves computed styles unchanged.
+1. **It validates the mechanism.** Composable, element-type-independent attributes carrying identity
+   and behavior — including on built-ins — is exactly the marker model. The proposal's own htmx
+   example uses attribute selectors as the activation mechanism.
+2. **It constrains naming, and that is the decision to make now.** The thread converges (2026-01) on
+   the platform reserving **hyphenated** attribute names for custom attributes, mirroring
+   custom-element naming. A bare `vaadin` attribute would sit outside that namespace forever: never
+   upgradable, permanently spec-invalid. A hyphenated `vaadin-role` sits inside it and becomes
+   registrable — retroactively killing the `data-` argument.
+3. **It offers an upgrade path for the recipes layer.** Today `<a vaadin-role="button">` is
+   styling-only; the fidelity gaps (no `[active]` reflection, no `disabled` semantics, no `role`
+   management) are approximated with `:active`. A registered `VaadinButtonAttribute` could add exactly
+   those to plain elements via lifecycle callbacks — turning recipes from "CSS look-alike" into a real
+   lightweight enhancement, without changing a single selector.
 
-- Ported component files contain **zero `vaadin-*` tag selectors** except two documented coexistence
-  leftovers (`vaadin-icon`, `vaadin-password-field-button`), each marked `NOTE:`.
-- The shared field/input files went from 26 hand-listed tags to **2 role tokens**.
-- Re-tagged `Button` subclass renders pixel-identical to `vaadin-button`, including theme variants —
-  today it renders base-only.
-- `<a vaadin-role="button">` / `<span vaadin-role="badge">` get the full Lumo look with native anchor behavior,
-  via ~45 recipe lines per component (generatable from base styles).
-- Wiping `class` on every element changes nothing — the same action breaks the class-marker design.
+What it does not change: components still stamp their own markers, because custom attributes fire when
+*authors* write attributes, while automatic identity comes from the component. And since it is
+pre-implementation, the marker must work today as an inert attribute plus a CSS selector — which it does.
+
+**Net effect:** keep the token-list attribute, but name it hyphenated. This PoC uses `vaadin-role`.
+
+## Related issues
+
+- **[#1803 — \[lumo\] Styling links as buttons](https://github.com/vaadin/web-components/issues/1803)**
+  (open since 2018). The original request. `<a vaadin-role="button">` closes it.
+- **[#7055 — Support renaming elements and using multiple tags on the same page without conflicts](https://github.com/vaadin/web-components/issues/7055)**
+  (open). Re-tagged subclasses lose their theme today; markers are stamped per class, not per tag.
+- **[#8237 — Utility classes that encapsulate common styling needs for native html elements](https://github.com/vaadin/web-components/issues/8237)**
+  (open epic). Five "style a native element like a Vaadin X" use cases — this PoC's recipes layer.
+  Mapped out below.
+- **[PR #11771 — feat: add aura-button class to style anchors as buttons](https://github.com/vaadin/web-components/pull/11771)**
+  (closed 2026-06). The class-based attempt, closed pending exactly this research.
+- **[#7976 — Make it possible to load Lumo as a CSS file](https://github.com/vaadin/web-components/issues/7976)**
+  (closed). The plain-CSS Lumo direction that light-DOM Lumo, and therefore this PoC, builds on.
+- **[WICG/webcomponents#1029 — Custom attributes](https://github.com/WICG/webcomponents/issues/1029)**
+  (open). The platform-level version of the marker; constrains the naming decision. See
+  [Standards trajectory](#standards-trajectory-wicg-custom-attributes).
+
+### How #8237 maps onto markers
+
+The [#8237](https://github.com/vaadin/web-components/issues/8237) epic asks for "utility classes that
+encapsulate common styling needs for native html elements". Its use cases are the recipes layer of this
+PoC, one marker token each:
+
+| #8237 use case                                            | Marker form                                | In this PoC                                |
+| --------------------------------------------------------- | ------------------------------------------ | ------------------------------------------ |
+| Style a `<label>` / `NativeLabel` as a field label        | `<label vaadin-role="field-label">`        | not covered — no recipe yet                |
+| Style a link as a Button (hover, focus, disabled, primary) | `<a vaadin-role="button">`                 | ✓ demo section 2                           |
+| Style a link as a menu item (focus and hover styles)      | `<a vaadin-role="item">`                   | not covered — no item styles in this PoC   |
+| Style a native `<input type="text">` (or a div) as a TextField | `vaadin-role="field"` / `"input"` roles | partly — role tokens exist, no recipe      |
+| Refactor badges off `theme`-attribute styling             | `<span vaadin-role="badge">`               | ✓ demo section 4                           |
+
+Two notes on the difference between the epic's framing and this proposal:
+
+- **Classes are fine for hand-written opt-in** — the author owns the `class` attribute they type, so
+  nothing clobbers it. The problem is that classes cannot be the *component's* marker (see option A),
+  which leaves you maintaining two selector sets for every rule: utility classes for plain elements and
+  tag names for components. One `vaadin-role` token serves both, from the same declaration block.
+- **The epic's "move away from `theme`-based styling" applies to element identity, not variants.** This
+  PoC replaces the identity selector and deliberately keeps `theme~='primary'` for variants. Whether
+  variants should also move is a separate question.
 
 ## Open questions for the team
 
-1. **Naming:** hyphenated `vaadin-role~=` (WICG #1029-compatible, Vue-safe — see "Standards trajectory")
-   vs bare `vaadin~=` (shortest, matches `theme` precedent, but permanently outside the custom-attributes
-   namespace) vs `data-vaadin-role~=` (validator-clean today; moot if #1029 lands)? Exact second half of the
-   hyphenated name also open: `vaadin-role`, `vaadin-is`, `vaadin-style`, …
-2. **Stamping mechanism:** which mixin owns it (`ElementMixin`? a new `MarkerMixin`?), the token
-   contribution API (`static get markers()`?), and the opt-out story for isolation consumers (#7055).
-3. **FOUC:** accept the `connectedCallback` window, hybrid tag+marker selectors during migration (option C),
-   or Flow-side SSR stamping (server renders `vaadin-role="…"` upfront — kills the window entirely)?
-4. **Recipes layer:** which components get plain-element recipes (button, badge — what else?), generated
-   from base styles or hand-written, and where do they live — theme package or a utility package
-   (rolfsmeds' point in #11771)? Plus a11y guidance for links-as-buttons.
-5. **Token vocabulary:** component tokens = tag name minus prefix? Role tokens per mixin (`field`, `input`,
-   `group-field`, `button-effects` for drawer-toggle)? Needs an authoritative list.
-6. **Aura:** same markers, same day? (Aura's `button.css` repeats a 5-tag list ~20× — same win.)
+1. **Naming.** Hyphenated `vaadin-role~=` (WICG-compatible, Vue-safe) vs bare `vaadin~=` (shortest,
+   matches the `theme` precedent, permanently outside the custom-attribute namespace) vs
+   `data-vaadin-role~=` (validator-clean today, moot if #1029 lands)? The second half is open too:
+   `vaadin-role`, `vaadin-is`, `vaadin-style`, …
+2. **Stamping mechanism.** Which mixin owns it (`ElementMixin`, or a new `MarkerMixin`)? What is the
+   token-contribution API (`static get markers()`)? What is the opt-out story for isolation
+   consumers (#7055)?
+3. **FOUC.** Accept the `connectedCallback` window, ship hybrid tag+marker selectors during migration
+   (option C), or stamp server-side from Flow so the markup arrives already marked?
+4. **Recipes layer.** Which components get plain-element recipes — the #8237 list is a good starting
+   point. Generated from base styles or hand-written? Shipped in the theme package or a utility
+   package? Plus a11y guidance for links-as-buttons.
+5. **Token vocabulary.** Are component tokens just the tag name minus the prefix? Which mixins
+   contribute role tokens (`field`, `input`, `group-field`, `button-effects` for drawer-toggle)? This
+   needs an authoritative list.
+6. **Aura.** Same markers, same release? Aura's `button.css` repeats a 5-tag list ~20 times — the same
+   win is waiting there.
 
 ## Relationship to existing work
 
-- Builds on `proto/lumo-light-dom` (`packages/lumo`) branch.
-- Continues [PR #11771](https://github.com/vaadin/web-components/pull/11771)'s closure note: "requires
-  research and further work and should be scheduled explicitly after the open questions are resolved."
+- Builds on the `proto/lumo-light-dom` branch (`packages/lumo`).
+- Continues PR #11771's closing note: "requires research and further work and should be scheduled
+  explicitly after the open questions are resolved."
