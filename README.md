@@ -2,8 +2,9 @@
 
 A proof of concept for the light-DOM Lumo theme (`proto/lumo-light-dom` → `packages/lumo`).
 
-**The idea:** stop keying theme rules on `vaadin-*` tag names. Key them on a token-list attribute
-that the component stamps on itself — and that anyone can also write by hand.
+## TL;DR
+
+Use token-list attribute selectors instead of hardcoded `vaadin-*` tag names.
 
 ```css
 /* today */                               /* this PoC */
@@ -13,29 +14,20 @@ that the component stamps on itself — and that anyone can also write by hand.
 ```
 
 ```html
-<vaadin-button>…</vaadin-button>     <!-- stamps vaadin-role="button" on itself -->
-<a vaadin-role="button">…</a>        <!-- plain element opts in by hand -->
-<custom-button>…</custom-button>     <!-- subclass under a foreign tag: fully themed -->
+<vaadin-button>…</vaadin-button>          <!-- sets vaadin-role="button" -->
+<a vaadin-role="button">…</a>             <!-- link styled as button -->
+<button vaadin-role="button">…</button>   <!-- plain native button element -->
+<custom-button>…</custom-button>          <!-- subclass with a custom tag name -->
 ```
 
-One selector now covers all three. The tag name stops being part of the theme's contract.
+## Related issues
 
-## Try it
+- **[#1803 — \[lumo\] Styling links as buttons](https://github.com/vaadin/web-components/issues/1803)**
+- **[#7055 — Support renaming elements and using multiple tags on the same page without conflicts](https://github.com/vaadin/web-components/issues/7055)**
+- **[#8237 — Utility classes that encapsulate common styling needs for native html elements](https://github.com/vaadin/web-components/issues/8237)**
+- **[PR #11771 — feat: add aura-button class to style anchors as buttons](https://github.com/vaadin/web-components/pull/11771)**
 
-```bash
-npm install
-npm start      # dev server (@web/dev-server, serves source)
-npm run build  # static build into dist/
-npm run preview
-```
-
-Pushing to `main` deploys `dist/` to GitHub Pages
-(`.github/workflows/deploy.yml`; enable Pages with source "GitHub Actions" in the repo settings).
-
-## The problems it solves
-
-All four have the same root cause: the theme selects on the tag name, so anything that is not
-literally `<vaadin-button>` is invisible to it.
+## Problems
 
 | Problem                    | Today                                             | With the marker                    |
 | -------------------------- | ------------------------------------------------- | ---------------------------------- |
@@ -44,40 +36,7 @@ literally `<vaadin-button>` is invisible to it.
 | Customizing tag names      | re-tagged subclass renders unstyled               | `<custom-button>` inherits Lumo    |
 | Family lists in `:where()` | 16 hand-listed tags in `field.css`                | one `[vaadin-role~='field']` token |
 
-### 1. Links as buttons — `<a vaadin-role="button">`
-
-Open since 2018 as [#1803](https://github.com/vaadin/web-components/issues/1803), and one of the
-five use cases of the [#8237](https://github.com/vaadin/web-components/issues/8237) epic. People want
-real anchors — `Cmd`-click, right-click → open in new tab, crawlable `href` — that look like Lumo
-buttons. Today the only way is to copy Lumo's button CSS into the app and re-copy it on every upgrade.
-
-[PR #11771](https://github.com/vaadin/web-components/pull/11771) tried this with an `.aura-button`
-class and was closed in 2026-06 pending exactly this research.
-
-Demo: section 2. The theme rules are shared verbatim with `<vaadin-button>`; only the structural base
-block is re-published for plain elements (`src/recipes/button.css`, ~45 lines).
-
-### 2. Divs as badges — `<div vaadin-role="badge">`
-
-Badge started life as a `theme="badge"` styling trick and is now a real component. The plain-element
-half is still unserved: a `<span>`, `<div>`, or `<a>` cannot join in. [#8237](https://github.com/vaadin/web-components/issues/8237)
-explicitly asks for badges to be refactored away from `theme`-attribute styling.
-
-Because every rule in `badge.css` styles the host directly, the same file covers both the component
-and a plain element — a ~25-line recipe supplies the structural base block. Demo: section 4.
-
-### 3. Customizing tag names — `<custom-button>`
-
-[#7055](https://github.com/vaadin/web-components/issues/7055): consumers subclass a component and
-register it under their own tag name (to avoid registry conflicts, to ship a customized variant, or
-because Copilot-style tooling needs isolation). With tag-keyed selectors that subclass renders as
-unstyled base markup — the theme has never heard of `<custom-button>`.
-
-The marker is stamped per class, so it travels with the inheritance chain, under any tag name. And
-because it is an opt-*in* mechanism, a subclass that genuinely wants isolation can opt out by not
-contributing tokens — tags give neither direction. Demo: section 3 (`<x-button> extends Button`).
-
-### 4. No more comma-separated tag names in `:where()`
+## Selector benefits
 
 Measured on `proto/lumo-light-dom:packages/lumo` (2026-08-21):
 
@@ -125,24 +84,6 @@ Two notes on the recipes layer:
 - It should be **build-generated** from the components' `*-base-styles.js`, not hand-copied. That
   answers the "copy-paste feels dirty" objection raised in PR #11771.
 - It is **theme-agnostic** — the structural base block is the same for Lumo and Aura, so Aura reuses it.
-
-## Results
-
-Verified 2026-08-21 against `@vaadin/*@25.3.0-alpha9` in Chromium (Playwright), light and dark — see
-`screenshots/demo-light.png` and `screenshots/demo-dark.png`.
-
-- Ported component files contain **zero `vaadin-*` tag selectors**, except two documented coexistence
-  leftovers (`vaadin-icon`, `vaadin-password-field-button`), each marked `NOTE:`.
-- The shared field/input files went from **26 hand-listed tags to 2 role tokens**.
-- Stamping is confirmed in the DOM: `vaadin-text-field` → `vaadin-role="text-field field input"`,
-  `x-button` → `vaadin-role="button"`.
-- A user-authored token survives stamping: `vaadin-role="my-custom"` becomes `"my-custom button"`.
-- The re-tagged `Button` subclass renders pixel-identical to `vaadin-button`, theme variants included.
-  Today it renders base-only.
-- `<a vaadin-role="button">` and `<span vaadin-role="badge">` get the full Lumo look while keeping
-  native anchor behavior.
-- **Wiping `class` on every marked element changes nothing.** The same action breaks a class-based
-  marker design outright.
 
 ## Options considered
 
@@ -231,23 +172,6 @@ What it does not change: components still stamp their own markers, because custo
 pre-implementation, the marker must work today as an inert attribute plus a CSS selector — which it does.
 
 **Net effect:** keep the token-list attribute, but name it hyphenated. This PoC uses `vaadin-role`.
-
-## Related issues
-
-- **[#1803 — \[lumo\] Styling links as buttons](https://github.com/vaadin/web-components/issues/1803)**
-  (open since 2018). The original request. `<a vaadin-role="button">` closes it.
-- **[#7055 — Support renaming elements and using multiple tags on the same page without conflicts](https://github.com/vaadin/web-components/issues/7055)**
-  (open). Re-tagged subclasses lose their theme today; markers are stamped per class, not per tag.
-- **[#8237 — Utility classes that encapsulate common styling needs for native html elements](https://github.com/vaadin/web-components/issues/8237)**
-  (open epic). Five "style a native element like a Vaadin X" use cases — this PoC's recipes layer.
-  Mapped out below.
-- **[PR #11771 — feat: add aura-button class to style anchors as buttons](https://github.com/vaadin/web-components/pull/11771)**
-  (closed 2026-06). The class-based attempt, closed pending exactly this research.
-- **[#7976 — Make it possible to load Lumo as a CSS file](https://github.com/vaadin/web-components/issues/7976)**
-  (closed). The plain-CSS Lumo direction that light-DOM Lumo, and therefore this PoC, builds on.
-- **[WICG/webcomponents#1029 — Custom attributes](https://github.com/WICG/webcomponents/issues/1029)**
-  (open). The platform-level version of the marker; constrains the naming decision. See
-  [Standards trajectory](#standards-trajectory-wicg-custom-attributes).
 
 ### How #8237 maps onto markers
 
