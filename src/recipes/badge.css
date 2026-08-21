@@ -1,0 +1,26 @@
+/* Recipe: plain elements as Lumo badges, replacing the `theme="badge"` */
+
+:where(span, a):where([vaadin-role~='badge']) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: baseline;
+  box-sizing: border-box;
+  gap: var(--vaadin-badge-gap, 0.25em);
+  padding: var(--vaadin-badge-padding, 0 calc(0.5lh - 0.25em));
+  font-size: var(--vaadin-badge-font-size, 0.875rem);
+  font-family: var(--vaadin-badge-font-family, inherit);
+  font-weight: var(--vaadin-badge-font-weight, 500);
+  line-height: var(--vaadin-badge-line-height, 1lh);
+  color: var(--vaadin-badge-text-color, var(--vaadin-text-color));
+  background: var(--vaadin-badge-background, transparent);
+  border: var(--vaadin-badge-border-width, 1px) solid var(--vaadin-badge-border-color, var(--vaadin-border-color));
+  border-radius: var(--vaadin-badge-border-radius, 100vh);
+  min-width: calc(1lh + var(--vaadin-badge-border-width, 1px) * 2);
+  white-space: nowrap;
+  height: round(1lh + var(--vaadin-badge-border-width, 1px) * 2, 0.125rem);
+  flex: none;
+  /* Only reserve 1lh of space (treat border as an outline) */
+  margin: calc(var(--vaadin-badge-border-width, 1px) * -1);
+  text-decoration: none;
+}

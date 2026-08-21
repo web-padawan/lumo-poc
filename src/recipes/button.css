@@ -1,0 +1,49 @@
+/* Recipe: plain elements as Lumo buttons (vaadin/web-components#1803). */
+
+:where(a, button):where([vaadin-role~='button']) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--vaadin-button-gap, 0 var(--vaadin-gap-s));
+  white-space: var(--vaadin-button-label-wrap, normal);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  cursor: var(--vaadin-clickable-cursor, pointer);
+  box-sizing: border-box;
+  flex-shrink: 0;
+  height: var(--vaadin-button-height, fit-content);
+  margin: var(--vaadin-button-margin, 0);
+  padding: var(--vaadin-button-padding, var(--vaadin-padding-block-container) var(--vaadin-padding-inline-container));
+  font-family: var(--vaadin-button-font-family, inherit);
+  font-size: var(--vaadin-button-font-size, inherit);
+  line-height: var(--vaadin-button-line-height, inherit);
+  font-weight: var(--vaadin-button-font-weight, 500);
+  color: var(--vaadin-button-text-color, var(--vaadin-text-color));
+  background: var(--vaadin-button-background, var(--vaadin-background-container));
+  background-origin: border-box;
+  border: var(--vaadin-button-border-width, 1px) solid
+    var(--vaadin-button-border-color, var(--vaadin-border-color-secondary));
+  border-radius: var(--vaadin-button-border-radius, var(--vaadin-radius-m));
+  touch-action: manipulation;
+  text-decoration: none;
+}
+
+:where(a, button):where([vaadin-role~='button']):focus-visible {
+  outline: var(--vaadin-focus-ring-width, 2px) solid var(--vaadin-focus-ring-color);
+  outline-offset: 1px;
+}
+
+/* Components reflect the pressed state as the [active] attribute; plain elements
+   only have :active — map it onto the same Lumo press overlays. */
+:where(a, button):where([vaadin-role~='button']):active:not([disabled])::before {
+  opacity: 0.05;
+  transition-duration: 0s;
+}
+
+:where(a, button):where([vaadin-role~='button'])[theme~='primary']:active:not([disabled])::before {
+  opacity: 0.1;
+}
+
+/* a11y note (rolfsmeds, #11771): making a link look like a button blurs the
+   action/navigation distinction — document this as an intentional, opt-in choice. */

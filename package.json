@@ -1,0 +1,29 @@
+{
+  "name": "lumo-poc",
+  "private": true,
+  "type": "module",
+  "description": "PoC: light-DOM Lumo with marker-attribute selectors instead of tag names",
+  "scripts": {
+    "start": "web-dev-server --node-resolve --watch --open",
+    "dev": "npm start",
+    "build": "rimraf dist && rollup -c",
+    "preview": "npm run build && web-dev-server --root-dir dist --open"
+  },
+  "dependencies": {
+    "@vaadin/badge": "25.3.0-alpha9",
+    "@vaadin/button": "25.3.0-alpha9",
+    "@vaadin/checkbox": "25.3.0-alpha9",
+    "@vaadin/text-area": "25.3.0-alpha9",
+    "@vaadin/text-field": "25.3.0-alpha9"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^1.0.0",
+    "@web/dev-server": "^0.4.6",
+    "@web/rollup-plugin-html": "^2.3.0",
+    "postcss": "^8.5.15",
+    "postcss-import": "^16.1.1",
+    "rimraf": "^6.0.1",
+    "rollup": "^4.59.0"
+  }
+}

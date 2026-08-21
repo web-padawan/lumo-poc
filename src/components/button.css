@@ -1,0 +1,189 @@
+/* PoC: tag-name selectors replaced with the `vaadin` marker attribute.
+   Original (proto/lumo-light-dom) repeats the family list
+   `:where(vaadin-button, vaadin-menu-bar-button, vaadin-message-input-button)` ~30
+   times (148 tag mentions in one file). Here every member of the family carries
+   `vaadin-role~="button"` — stamped by the component itself (see ../marker-stamp.js) or
+   written manually on a plain element (see ../recipes/button.css) — so the whole
+   family, subclasses, and `<a vaadin-role="button">` are one selector.
+
+   NOTE: the original also widens some rules to vaadin-drawer-toggle (press overlay
+   only, not the full look). In the marker model drawer-toggle would carry a narrower
+   aspect token (e.g. `vaadin-role~="button-effects"`); the full-look components would
+   carry both tokens. Skipped in this PoC — drawer-toggle is not imported. */
+
+:where(:root),
+:where(:host) {
+  --_lumo-button-size: var(--lumo-size-m);
+  --vaadin-button-height: var(--_lumo-button-size);
+  --vaadin-button-padding: 0 calc(var(--_lumo-button-size) / 3 + var(--lumo-border-radius-m) / 2);
+  --vaadin-button-margin: var(--lumo-space-xs) 0;
+  --vaadin-button-background: var(--lumo-contrast-5pct);
+  --vaadin-button-text-color: var(--lumo-primary-text-color);
+  --vaadin-button-border-width: 0px;
+}
+
+/* NOTE: original has a third selector here, :where(vaadin-message-input-button),
+   re-declaring the button vars at element scope to beat its own base styles. In the
+   marker model: :where([vaadin-role~='message-input-button']). Dropped from the PoC. */
+
+:where([vaadin-role~='button']) {
+  position: relative;
+  min-width: var(--vaadin-button-min-width, calc(var(--_lumo-button-size) * 2));
+  outline-offset: 0;
+}
+
+:where([vaadin-role~='button'])[theme~='small'] {
+  --_lumo-button-size: var(--lumo-size-s);
+  --vaadin-button-font-size: var(--lumo-font-size-s);
+}
+
+:where([vaadin-role~='button'])[theme~='large'] {
+  --_lumo-button-size: var(--lumo-size-l);
+  --vaadin-button-font-size: var(--lumo-font-size-l);
+}
+
+:where([vaadin-role~='button'])[theme~='primary'] {
+  --vaadin-button-background: var(--vaadin-button-primary-background, var(--lumo-primary-color));
+  --vaadin-button-text-color: var(--vaadin-button-primary-text-color, var(--lumo-primary-contrast-color));
+  --vaadin-button-font-weight: 600;
+  min-width: calc(var(--_lumo-button-size) * 2.5);
+  outline-offset: 1px;
+}
+
+:where([vaadin-role~='button']):is([theme~='tertiary'], [theme~='tertiary-inline']) {
+  --vaadin-button-background: transparent;
+  min-width: 0;
+}
+
+:where([vaadin-role~='button'])[theme~='tertiary'] {
+  --vaadin-button-padding: 0 calc(var(--_lumo-button-size) / 6);
+}
+
+:where([vaadin-role~='button'])[theme~='tertiary-inline'] {
+  --vaadin-button-padding: 0;
+  --vaadin-button-margin: 0;
+  --vaadin-button-height: auto;
+  --vaadin-button-font-size: inherit;
+  --vaadin-button-line-height: inherit;
+}
+
+:where([vaadin-role~='button'])[theme~='icon']:not([theme~='tertiary-inline']) {
+  min-width: var(--_lumo-button-size);
+  --vaadin-button-padding: 0 calc(var(--_lumo-button-size) / 4);
+}
+
+:where([vaadin-role~='button'])[theme~='success'] {
+  --vaadin-button-text-color: var(--lumo-success-text-color);
+}
+
+:where([vaadin-role~='button'])[theme~='success'][theme~='primary'] {
+  --vaadin-button-background: var(--lumo-success-color);
+  --vaadin-button-text-color: var(--lumo-success-contrast-color);
+}
+
+:where([vaadin-role~='button'])[theme~='warning'] {
+  --vaadin-button-text-color: var(--lumo-warning-text-color);
+}
+
+:where([vaadin-role~='button'])[theme~='warning'][theme~='primary'] {
+  --vaadin-button-background: var(--lumo-warning-color);
+  --vaadin-button-text-color: var(--lumo-warning-contrast-color);
+}
+
+:where([vaadin-role~='button'])[theme~='error'] {
+  --vaadin-button-text-color: var(--lumo-error-text-color);
+}
+
+:where([vaadin-role~='button'])[theme~='error'][theme~='primary'] {
+  --vaadin-button-background: var(--lumo-error-color);
+  --vaadin-button-text-color: var(--lumo-error-contrast-color);
+}
+
+:where([vaadin-role~='button'])[theme~='contrast'] {
+  --vaadin-button-text-color: var(--lumo-contrast);
+}
+
+:where([vaadin-role~='button'])[theme~='contrast'][theme~='primary'] {
+  --vaadin-button-background: var(--lumo-contrast);
+  --vaadin-button-text-color: var(--lumo-base-color);
+}
+
+:where([vaadin-role~='button'])[disabled] {
+  opacity: 1;
+  --vaadin-button-text-color: var(--lumo-disabled-text-color);
+}
+
+:where([vaadin-role~='button'])[disabled][theme~='primary'] {
+  --vaadin-button-background: var(--lumo-contrast-30pct);
+  --vaadin-button-text-color: var(--lumo-base-color);
+}
+
+:where([vaadin-role~='button'])::before,
+:where([vaadin-role~='button'])::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-color: currentColor;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+}
+
+:where([vaadin-role~='button'])::before {
+  transition: opacity 100ms;
+}
+
+:where([vaadin-role~='button'])::after {
+  transition:
+    opacity 1.4s,
+    transform 0.1s;
+  filter: blur(8px);
+}
+
+:where([vaadin-role~='button']):is([disabled], [theme~='tertiary-inline'])::before,
+:where([vaadin-role~='button']):is([disabled], [theme~='tertiary-inline'])::after {
+  display: none;
+}
+
+@media (any-hover: hover) {
+  :where([vaadin-role~='button']):hover:not([disabled])::before {
+    opacity: 0.02;
+  }
+
+  :where([vaadin-role~='button'])[theme~='primary']:hover:not([disabled])::before {
+    opacity: 0.05;
+  }
+}
+
+/* Components reflect the press state as [active]; plain elements only have :active.
+   The recipe layer maps :active for them (see ../recipes/button.css). */
+:where([vaadin-role~='button'])[active]:not([disabled])::before {
+  opacity: 0.05;
+  transition-duration: 0s;
+}
+
+:where([vaadin-role~='button'])[active]:not([disabled])::after {
+  opacity: 0.1;
+  transition-duration: 0s, 0s;
+  transform: scale(0);
+}
+
+:where([vaadin-role~='button'])[theme~='primary'][active]:not([disabled])::before {
+  opacity: 0.1;
+}
+
+:where([vaadin-role~='button'])[theme~='primary'][active]:not([disabled])::after {
+  opacity: 0.2;
+}
+
+:where([vaadin-role~='button'])[theme~='primary']::before,
+:where([vaadin-role~='button'])[theme~='primary']::after {
+  background-color: black;
+}
+
+/* NOTE: coexistence leftover — vaadin-icon kept as a tag selector in this PoC.
+   Full adoption would stamp icons too and use [vaadin-role~='icon']. */
+:where([vaadin-role~='button']) > vaadin-icon[icon^='vaadin:'] {
+  padding: 0.25em;
+}

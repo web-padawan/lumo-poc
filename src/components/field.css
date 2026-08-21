@@ -1,0 +1,115 @@
+/* Shared Lumo styles for the field mixin parts: label, helper text, error message,
+   required indicator.
+
+   PoC headline change: the original maintains a hand-written 16-tag selector list
+   (vaadin-slider, vaadin-range-slider, vaadin-checkbox-group, vaadin-radio-group,
+   vaadin-text-field, vaadin-password-field, vaadin-email-field, vaadin-number-field,
+   vaadin-integer-field, vaadin-text-area, vaadin-combo-box, vaadin-time-picker,
+   vaadin-date-picker, vaadin-select, vaadin-custom-field, vaadin-date-time-picker)
+   that must be edited whenever a field component is added. Here the whole family is
+   one ROLE token: every component using the field mixin stamps `vaadin-role~="field"`, so
+   new (and third-party) field components join the family without touching this file. */
+
+:where(:root),
+:where(:host) {
+  --vaadin-input-field-label-color: var(--lumo-secondary-text-color);
+  --vaadin-input-field-label-font-size: var(--lumo-font-size-s);
+  --vaadin-input-field-label-line-height: 1;
+  --vaadin-input-field-helper-font-size: var(--lumo-font-size-xs);
+  --vaadin-input-field-helper-line-height: var(--lumo-line-height-xs);
+  --vaadin-input-field-error-color: var(--lumo-error-text-color);
+  --vaadin-input-field-error-font-size: var(--lumo-font-size-xs);
+  --vaadin-input-field-error-line-height: var(--lumo-line-height-xs);
+  --vaadin-input-field-required-indicator: '\2022';
+  --vaadin-input-field-required-indicator-color: var(--lumo-primary-text-color);
+}
+
+:where([vaadin-role~='field']) {
+  &[has-label] {
+    padding-top: var(--lumo-space-m);
+  }
+
+  &::part(label) {
+    max-width: 100%;
+    /* Don't let the nowrap label's min-content width grow the field's grid column. */
+    width: 0;
+    padding-inline: calc(var(--lumo-border-radius-m) / 4) 1em;
+    /* Workaround for diacritics being cut off: top padding compensated by a negative margin */
+    padding-top: 0.25em;
+    margin-top: -0.25em;
+    padding-bottom: 0.5em;
+    /* Label→input spacing comes from padding-bottom; drop the base grid margin */
+    margin-bottom: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: color 0.2s;
+  }
+
+  &[focused]:not([readonly])::part(label) {
+    color: var(--vaadin-input-field-focused-label-color, var(--lumo-primary-text-color));
+  }
+
+  &[invalid] {
+    --vaadin-input-field-required-indicator-color: var(--lumo-error-text-color);
+  }
+
+  &::part(helper-text) {
+    margin-inline-start: calc(var(--lumo-border-radius-m) / 4);
+    transition: color 0.2s;
+  }
+
+  &[has-helper]::part(helper-text)::before {
+    content: '';
+    display: block;
+    height: var(--vaadin-input-field-helper-spacing, 0.4em);
+  }
+
+  &[disabled]::part(helper-text) {
+    color: var(--lumo-disabled-text-color);
+  }
+
+  @media (any-hover: hover) {
+    &:hover:not([readonly], [focused])::part(label) {
+      color: var(--vaadin-input-field-hovered-label-color, var(--lumo-body-text-color));
+    }
+
+    &:hover:not([readonly])::part(helper-text) {
+      color: var(--lumo-body-text-color);
+    }
+  }
+
+  /* Lumo has no error icon; remove the base warn icon entirely. */
+  &::part(error-message) {
+    margin-top: 0.4em;
+    margin-inline-start: calc(var(--lumo-border-radius-m) / 4);
+  }
+
+  &::part(error-message)::before {
+    content: none;
+  }
+
+  /* Helper above the field */
+  &[has-helper][theme~='helper-above-field']::part(label) {
+    padding-bottom: var(--vaadin-input-field-helper-spacing, 0.4em);
+  }
+
+  &[has-helper][theme~='helper-above-field']::part(helper-text)::before {
+    display: none;
+  }
+
+  &[has-helper][theme~='helper-above-field']::part(helper-text)::after {
+    content: '';
+    display: block;
+    height: var(--vaadin-input-field-helper-spacing, 0.4em);
+  }
+}
+
+/* The label width:0 above is only for the single-column input fields. Group and
+   slider fields have no fixed width and grow to fit their label instead.
+   PoC: the original's second list (vaadin-slider, vaadin-range-slider,
+   vaadin-checkbox-group, vaadin-radio-group) becomes a second role token that those
+   components stamp alongside `field`. */
+:where([vaadin-role~='group-field'])::part(label) {
+  width: auto;
+}
