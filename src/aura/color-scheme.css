@@ -1,0 +1,7 @@
+/* Vendored verbatim from @vaadin/aura@25.3.0-alpha12 (web-components/packages/aura/src/color-scheme.css). */
+
+:where(:root),
+:where(:host) {
+  --aura-content-color-scheme: inherit;
+  --aura-notification-color-scheme: inherit;
+}

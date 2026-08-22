@@ -1,0 +1,18 @@
+/* Aura theme entry — marker-attribute translation of @vaadin/aura@25.3.0-alpha12.
+   Base token files are vendored verbatim (they contain no tag selectors); surface.css
+   and the component files are translated from vaadin-* tag lists to [vaadin-role~='…']
+   markers. Plain-element base styles (recipes) come from base.css, which is always
+   loaded regardless of the active theme. */
+
+@import './src/aura/color.css';
+@import './src/aura/color-scheme.css';
+@import './src/aura/palette.css';
+@import './src/aura/shadow.css';
+@import './src/aura/size.css';
+@import './src/aura/surface.css';
+@import './src/aura/typography.css';
+
+@import './src/aura/components/input-container.css';
+@import './src/aura/components/badge.css';
+@import './src/aura/components/button.css';
+@import './src/aura/components/checkbox.css';

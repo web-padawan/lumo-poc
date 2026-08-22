@@ -1,0 +1,7 @@
+/* Theme-independent layer, always loaded. The recipes replicate component *base* styles
+   for plain elements (a, button, span, …) using only --vaadin-* tokens, standing in for
+   the base styles that Vaadin components ship themselves. The theme layer on top
+   (lumo.css or aura.css) is swappable. */
+
+@import './src/recipes/badge.css';
+@import './src/recipes/button.css';

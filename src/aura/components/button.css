@@ -1,0 +1,124 @@
+/* Translated from @vaadin/aura@25.3.0-alpha12 (web-components/packages/aura/src/components/button.css).
+   Upstream repeats the tag list
+     :is(vaadin-button, vaadin-upload-button, vaadin-menu-bar-button, vaadin-drawer-toggle, vaadin-crud-edit)
+   ~15 times; each occurrence becomes one :where([vaadin-role~='button']) marker selector.
+   Trimmed: vaadin-drawer-toggle and vaadin-menu-bar-button special-case rules (components
+   not in this PoC). Components reflect the press state as [active]; plain elements only
+   have :active, so press rules match :is([active], :active).
+   NOTE: coexistence leftovers — vaadin-icon and vaadin-avatar kept as tag selectors. */
+
+:where(:root),
+:where(:host) {
+  --vaadin-button-shadow: var(--aura-shadow-xs);
+}
+
+:where([vaadin-role~='button']) {
+  transition: scale 180ms;
+  position: relative;
+  --_background: var(--aura-accent-surface) padding-box;
+  color: var(--vaadin-button-text-color, var(--aura-accent-text-color));
+}
+
+:where([vaadin-role~='button']:not([theme~='tertiary'])) {
+  --aura-surface-level: 4;
+  --aura-surface-opacity: 0.5;
+  box-shadow: var(--vaadin-button-shadow);
+}
+
+:where([vaadin-role~='button']):not([theme~='primary'], [theme~='tertiary']) {
+  background: var(--vaadin-button-background, var(--_background));
+  border-color: var(--vaadin-button-border-color, var(--aura-accent-border-color));
+}
+
+:where([vaadin-role~='button']:not([theme~='primary'])) {
+  outline-offset: calc(var(--vaadin-button-border-width, 1px) * -1);
+}
+
+/*
+Increase padding, but only for buttons that don't have an icon in the default slot.
+Buttons that place an icon in the default slot are assumed to be icon-only buttons.
+*/
+:where([vaadin-role~='button']):not(
+  :has(> :is(vaadin-icon, [vaadin-role~='badge'], svg, i[class*='fa-'], vaadin-avatar):not([slot]))
+) {
+  --vaadin-button-padding: var(--vaadin-padding-block-container)
+    var(--vaadin-padding-m);
+}
+
+/* Decrease padding when an icon is placed in the prefix or suffix slot */
+:where([vaadin-role~='button'])[theme~='tertiary'],
+:where([vaadin-role~='button']):has(
+  > [slot='prefix']:is(vaadin-icon, [vaadin-role~='badge'], svg, i[class*='fa-'], vaadin-avatar)
+) {
+  padding-inline-start: var(--vaadin-padding-s);
+}
+
+:where([vaadin-role~='button'])[theme~='tertiary'],
+:where([vaadin-role~='button']):has(
+  > [slot='suffix']:is(vaadin-icon, [vaadin-role~='badge'], svg, i[class*='fa-'], vaadin-avatar)
+) {
+  padding-inline-end: var(--vaadin-padding-s);
+}
+
+:where([vaadin-role~='button'][theme~='primary']) {
+  outline-offset: 2px;
+  --vaadin-button-font-weight: var(--aura-font-weight-semibold);
+  --vaadin-button-text-color: var(--aura-accent-contrast-color);
+  --vaadin-button-background: var(--aura-accent-color);
+  --vaadin-button-border-color: var(--vaadin-border-color-secondary);
+  --vaadin-button-shadow: var(--aura-shadow-s);
+}
+
+:where([vaadin-role~='button'])[disabled][theme~='primary']::part(label) {
+  color: color-mix(in srgb, currentColor 50%, transparent);
+}
+
+:where([vaadin-role~='button']):not([disabled])::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--vaadin-button-border-width, 1px) * -1);
+  pointer-events: none;
+  border-radius: inherit;
+  background-color: currentColor;
+  opacity: 0;
+  transition:
+    opacity 100ms,
+    background-color 100ms;
+}
+
+@supports (color: hsl(0 0 0)) {
+  :where([vaadin-role~='button']):not([disabled])::before {
+    background-color: oklch(from currentColor calc(l + 0.4 - c) c h / calc(1 - l / 2));
+  }
+}
+
+@media (any-hover: hover) {
+  :where([vaadin-role~='button']):hover:not([disabled], [active], :active)::before {
+    opacity: 0.03;
+  }
+
+  :where([vaadin-role~='button'])[theme~='primary']:hover:not([disabled], [active], :active)::before {
+    opacity: 0.12;
+  }
+}
+
+@media (min-resolution: 2x) {
+  :where([vaadin-role~='button']):is([active], :active):not([disabled], [aria-disabled='true']) {
+    scale: 0.98;
+    transition-duration: 50ms;
+  }
+}
+
+:where([vaadin-role~='button']):is([active], :active):not([disabled]) {
+  box-shadow: none;
+}
+
+:where([vaadin-role~='button']):is([active], :active):not([disabled])::before {
+  transition-duration: 0s;
+  opacity: 0.08;
+  background: oklch(from currentColor min(c, 1 - l + c) calc(c * 0.9) h);
+}
+
+:where([vaadin-role~='button'])[theme~='primary']:is([active], :active):not([disabled])::before {
+  opacity: 0.16;
+}

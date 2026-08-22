@@ -3,17 +3,27 @@
 A proof of concept using attributes selectors instead of hardcoded `vaadin-*` tag names.
 
 ```css
-/* today */                               /* this PoC */
-:where(vaadin-button,                     :where([vaadin-role~='button']) { … }
+/* Before */
+:where(vaadin-button,
        vaadin-menu-bar-button,
        vaadin-message-input-button) { … }
+
+/* This PoC */
+:where([vaadin-role~='button']) { … }
 ```
 
 ```html
-<vaadin-button>…</vaadin-button>          <!-- sets vaadin-role="button" -->
-<a vaadin-role="button">…</a>             <!-- link styled as button -->
-<button vaadin-role="button">…</button>   <!-- plain native button element -->
-<custom-button>…</custom-button>          <!-- subclass with a custom tag name -->
+<!-- Sets vaadin-role="button" -->
+<vaadin-button>…</vaadin-button>
+
+<!-- Link styled as button -->
+<a vaadin-role="button">…</a>
+
+<!-- Styled native button -->
+<button vaadin-role="button">…</button>
+
+<!-- Subclass with a custom tag name -->
+<custom-button>…</custom-button>
 ```
 
 ## Related issues
@@ -30,6 +40,11 @@ A proof of concept using attributes selectors instead of hardcoded `vaadin-*` ta
 3. Using arbitrary HTML elements as badges (replaces `theme="badge"`)
 4. Extending `vaadin-button` and using a different tag name
 
+## Structure
+
+- Both `lumo.css` or `aura.css` are implemented using the same `[vaadin-role]` selectors
+- Shared `base.css` with recipes that replicate component base styles for plain elements
+
 ## Why attributes?
 
 - CSS class names are expected to be set by the user (e.g. Lumo utility classes)
@@ -38,4 +53,3 @@ A proof of concept using attributes selectors instead of hardcoded `vaadin-*` ta
 ## To Do
 
 - Prototype minimal set of CSS for `<input>` (text, checkbox)
-- Prototype Aura theme example in a separate file next to Lumo

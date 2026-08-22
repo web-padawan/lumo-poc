@@ -1,0 +1,56 @@
+/* Translated from @vaadin/aura@25.3.0-alpha12 (web-components/packages/aura/src/components/checkbox-radio.css).
+   vaadin-checkbox → :where([vaadin-role~='checkbox']). Trimmed: vaadin-radio-button and
+   vaadin-switch rules (components not in this PoC). */
+
+:where(:root),
+:where(:host) {
+  --vaadin-checkbox-size: round(1.25em, 2px);
+}
+
+:where([vaadin-role~='checkbox'])::part(checkbox) {
+  transition: background-color 100ms;
+}
+
+:where([vaadin-role~='checkbox']):not([disabled], [readonly])::part(checkbox) {
+  background: var(--vaadin-checkbox-background, var(--aura-surface-color));
+}
+
+:where([vaadin-role~='checkbox']):not([readonly], [disabled])::part(checkbox) {
+  --aura-surface-level: 4;
+  --aura-surface-opacity: 0.7;
+  box-shadow: var(--aura-shadow-xs);
+}
+
+:where([vaadin-role~='checkbox']):not([checked], [indeterminate])::part(checkbox) {
+  background-clip: padding-box;
+}
+
+:where([vaadin-role~='checkbox']):is([checked], [indeterminate]):not([readonly], [disabled])::part(checkbox) {
+  --vaadin-checkbox-background: var(--aura-accent-color);
+  --vaadin-checkbox-marker-color: var(--aura-accent-contrast-color);
+  --vaadin-checkbox-border-color: var(--vaadin-border-color-secondary);
+  box-shadow: var(--aura-shadow-s);
+}
+
+:where([vaadin-role~='checkbox']):not([readonly], [disabled])::part(checkbox)::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--vaadin-input-field-border-width, 1px) * -1);
+  border-radius: inherit;
+  background-color: currentColor;
+  opacity: 0;
+  transition:
+    opacity 100ms,
+    background-color 100ms;
+}
+
+@media (any-hover: hover) {
+  :where([vaadin-role~='checkbox']):hover:not([readonly], [disabled], [active])::part(checkbox)::before {
+    opacity: 0.04;
+  }
+}
+
+:where([vaadin-role~='checkbox'])[active]:not([readonly], [disabled])::part(checkbox)::before {
+  opacity: 0.1;
+  background: #000;
+}

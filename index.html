@@ -4,8 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>lumo PoC — marker-attribute selectors</title>
-    <!-- Relative href: the built site is served from a /repo-name/ subpath on GitHub Pages -->
-    <link rel="stylesheet" href="./lumo.css" />
+    <!-- Relative hrefs: the built site is served from a /repo-name/ subpath on GitHub Pages -->
+    <!-- base.css (recipes for plain elements) is always on; the theme layer is swappable. -->
+    <link rel="stylesheet" href="./base.css" />
+    <link rel="stylesheet" href="./lumo.css" id="theme-lumo" />
+    <link rel="stylesheet" href="./aura.css" id="theme-aura" disabled />
     <style>
       body {
         margin: 0 auto;
@@ -22,22 +25,19 @@
         gap: 0.75rem;
         margin: 0.5rem 0;
       }
-      .note {
-        font-size: 0.8125rem;
-        color: var(--lumo-secondary-text-color);
-        max-width: 46rem;
-      }
       code {
         font-size: 0.8125em;
-        background: var(--lumo-contrast-5pct);
+        background: color-mix(in srgb, currentColor 6%, transparent);
         padding: 0 0.3em;
       }
     </style>
   </head>
   <body>
-    <h2>Lumo PoC — <code>vaadin-role~="…"</code> marker selectors</h2>
-    <button vaadin-role="button" id="toggle-scheme">Toggle color scheme</button>
-
+    <h2>PoC — <code>vaadin-role~="…"</code> marker selectors</h2>
+    <div class="row">
+      <button vaadin-role="button" id="toggle-theme">Theme: Lumo</button>
+      <button vaadin-role="button" id="toggle-scheme">Toggle color scheme</button>
+    </div>
     <section>
       <h3>1. Components: <code>&lt;vaadin-button&gt;</code></h3>
       <div class="row">
@@ -122,6 +122,16 @@
       document.getElementById('toggle-scheme').addEventListener('click', () => {
         const root = document.documentElement;
         root.style.colorScheme = root.style.colorScheme === 'dark' ? 'light' : 'dark';
+      });
+
+      // Theme switch = flipping which stylesheet is enabled. No DOM changes otherwise.
+      const lumo = document.getElementById('theme-lumo');
+      const aura = document.getElementById('theme-aura');
+      document.getElementById('toggle-theme').addEventListener('click', (e) => {
+        const toAura = aura.disabled;
+        lumo.disabled = toAura;
+        aura.disabled = !toAura;
+        e.target.textContent = `Theme: ${toAura ? 'Aura' : 'Lumo'}`;
       });
     </script>
   </body>
